@@ -5,8 +5,96 @@ import my_db
 
 
 def start(bot, update):
-    update.message.reply_text('Hi, '
-                              '@{}!'.format(update.effective_user.username))
+    update.message.reply_text('Hi, @{}!'.format(update.effective_user.username))
+
+
+class Example:
+    def __init__(self):
+        self.command_name = ""
+        self.n, self.k, self.m = '1', '2', '1'
+        self.matrix1 = "1 2"
+        self.matrix2 = "3 4"
+        self.ans = ""
+        self.command_input = ""
+
+    def write(self, bot, update):
+        answer_string = "Пример ввода:\n{} {}\n\nОтвет на ваш запрос:\n{}".format(
+            self.command_name,
+            self.command_input,
+            self.ans
+        )
+        update.message.reply_text(answer_string)
+
+
+def transpose_example(bot, update):
+    example = Example()
+    example.command_name = "/transpose"
+    example.command_input = "{} {} {}".format(
+        example.n,
+        example.k,
+        example.matrix1
+    )
+    example.ans = "1\n2"
+    example.write(bot, update)
+
+
+def multimatrix_example(bot, update):
+    example = Example()
+    example.command_name = "/multimatrix"
+    example.command_input = "{} {} {} {} {} {}".format(
+        example.n,
+        example.k,
+        example.matrix1,
+        example.k,
+        example.m,
+        example.matrix2
+    )
+    example.ans = "11"
+    example.write(bot, update)
+
+
+def multiscalar_example(bot, update):
+    example = Example()
+    example.command_name = "/multiscalar"
+    example.command_input = "{} {} {}".format(
+        example.n,
+        example.matrix1,
+        example.matrix2
+    )
+    example.ans = "3 8"
+    example.write(bot, update)
+
+
+def matrixsum_example(bot, update):
+    example = Example()
+    example.command_name = "/matrixsum"
+    example.command_input = "{} {} {} {}".format(
+        example.n,
+        example.k,
+        example.matrix1,
+        example.matrix2
+    )
+    example.ans = "3 8"
+    example.write(bot, update)
+
+
+def bot_help(bot, update):
+    help_answer = "Надеюсь, этот текст тебе поможет :)\n\n" +\
+        "/help - функция, которой ты только что воспользовался. Далее она расскажет о более полезных командах.\n\n" +\
+        "/transpose - транспонирование матрицы\n" +\
+        "Чтобы посмотреть пример с её использованием, нажми: /transpose_example\n\n" +\
+        "/multimatrix - перемножение матриц\n" +\
+        "Пример с её использованием, жми: /multimatrix_example\n\n" +\
+        "/matrixsum - сумма матриц\n" +\
+        "Жми для примера: /matrixsum_example\n\n" +\
+        "/multiscalar - скалярное произведение векторов\n" +\
+        "Примерчик: /multiscalar_example\n\n" +\
+        "/showhistory - команда для просмотра истории.\n" +\
+        "Храняться только последние 10 твоих запросов на высчисление ¯\(°_o)/¯\n" +\
+        "Как надо набирать эту команду:\n" +\
+        "/showhistory 5 - показать последние 5 запросов на вычисление\n\n" +\
+        "Все матрицы записываются подряд построчно.\nНапример, матрица\n1 2\n3 4\nбудет выглядеть как 1 2 3 4"
+    update.message.reply_text(help_answer)
 
 
 def db_prepare(message, _type, fm, sm, ans):
@@ -20,7 +108,8 @@ def db_prepare(message, _type, fm, sm, ans):
     return d
 
 
-def make_ans(arr):
+def format_answer(arr):
+    print(arr)
     answer = ''
     for elem in arr:
         for e in elem[:-1]:
@@ -34,204 +123,200 @@ def answerer(bot, update):
                               'которую вы хотите использовать')
 
 
-def transpose(bot, update, args):
-    if len(args) == 0:
-        answerer()
-        update.message.reply_text('Введите размеры '
-                                  'двумерной матрицы, '
-                                  'а потом саму матрицу')
-    else:
-        if len(args) == 2:
-            update.message.reply_text('Введите саму матрицу')
-        else:
-            n, m = int(args[0]), int(args[1])
-            if len(args) != (2 + n * m):
-                update.message.reply_text('Ваша матрица не соответствует'
-                                          ' указанным размерам. {} - '
-                                          'количество строк, {} - '
-                                          'количество столбцов'.format(n, m))
-            else:
-                new_array = [[int(args[2 + row * m + column])
-                              for column in range(m)] for row in range(n)]
-                val_dict = db_prepare(update.message,
-                                      '/transpose',
-                                      new_array,
-                                      "NULL",
-                                      "NULL"
-                                      )
-                ans = my_db.select_from_db(val_dict)
-                if len(ans):
-                    arr = json.loads(ans[0][0])
-                    my_db.update_date(update.message['chat']['id'],
-                                      ans[0][1],
-                                      update.message['date'].__str__()
-                                      )
-                else:
-                    arr = np.array(new_array).transpose().tolist()
-                    val_dict['answer'] = json.dumps(arr)
-                    my_db.insert_into_db(val_dict)
-                update.message.reply_text(make_ans(arr))
+class OpHandler:
+    def __init__(self):
+        self.super_answer = 'Пожалуйста, введите значения вместе с функцией, которую хотите использовать'
+        self.args_fail_answer = "Аргументов нет"
+        self.args_format_fail_answer = ""
+        self.args_count_fail_answer = ""
+        self.command_name = ""
 
+    def read_args(self, bot, update, args):
+        if len(args) == 0:
+            update.message.reply_text(self.args_fail_answer)
+            update.message.reply_text(self.super_answer)
+            return None, None
 
-def matrix_multiplication(bot, update, args):
-    if len(args) == 0:
-        answerer()
-        update.message.reply_text('Введите размеры матрицы'
-                                  ' и саму матрицу, '
-                                  'а потом в таком же формате вторую')
-    else:
-        n, k = int(args[0]), int(args[1])
+        n = int(args[0])
+        if self.command_name == '/showhistory':
+            return n, None
+
         try:
-            k1, m = int(args[2 + n * k]), int(args[2 + n * k + 1])
-            flag = False
-        except IndexError:
-            update.message.reply_text('Упс. Кажется, вы ввели не всё :(')
-            flag = True
-
-        if flag:
-            pass
-        elif k != k1:
-            update.message.reply_text('Нельзя перемножить ваши матрицы.')
-        elif len(args) != 4 + (n + m) * k:
-            update.message.reply_text('Ваши матрицы не соответствуют'
-                                      ' указанным размерам.')
-        else:
-
-            new_array1 = [[int(args[2 + row * k + column]) for column in range(k)]
-                          for row in range(n)]
-            new_array2 = [[int(args[4 + n * k + row * m + column])
-                           for column in range(m)] for row in range(k)]
-
-            val_dict = db_prepare(update.message,
-                                  '/multimatrix',
-                                  new_array1,
-                                  new_array2,
-                                  "NULL"
-                                  )
-            ans = my_db.select_from_db(val_dict)
-            if len(ans):
-                arr = json.loads(ans[0][0])
-                my_db.update_date(update.message['chat']['id'],
-                                  ans[0][1],
-                                  update.message['date'].__str__()
-                                  )
+            if self.command_name == '/multiscalar':
+                new_array1 = [int(args[column]) for column in range(1, n + 1)]
+                new_array2 = [int(args[column]) for column in range(n + 1, 2 * n + 1)]
             else:
-                new_arr = np.dot(np.array(new_array1), np.array(new_array2))
-                arr = [[int(new_arr[row][column]) for column in range(m)]
-                       for row in range(n)]
-                val_dict['answer'] = json.dumps(arr)
-                my_db.insert_into_db(val_dict)
-            update.message.reply_text(make_ans(arr))
-
-
-def matrix_sum(bot, update, args):
-    if len(args) == 0:
-        answerer()
-        update.message.reply_text('Введите размеры матрицы'
-                                  ' и саму матрицу, а потом вторую')
-    else:
-        n, k = int(args[0]), int(args[1])
-        if len(args) != 2 + 2 * n * k:
-            update.message.reply_text('Ваши матрицы не соответствуют'
-                                      ' указанным размерам.')
-        else:
-            new_array1 = [[int(args[2 + row * k + column])
-                           for column in range(k)] for row in range(n)]
-            new_array2 = [[int(args[2 + n * k + row * k + column])
-                           for column in range(k)] for row in range(n)]
-            val_dict = db_prepare(update.message,
-                                  '/matrixsum',
-                                  new_array1,
-                                  new_array2,
-                                  "NULL"
-                                  )
-            ans = my_db.select_from_db(val_dict)
-            if len(ans):
-                arr = json.loads(ans[0][0])
-                my_db.update_date(update.message['chat']['id'],
-                                  ans[0][1],
-                                  update.message['date'].__str__()
-                                  )
-            else:
-                new_arr = np.array(new_array1) + np.array(new_array2)
-                arr = [[int(new_arr[row][column]) for column in range(k)]
-                       for row in range(n)]
-                val_dict['answer'] = json.dumps(arr)
-                my_db.insert_into_db(val_dict)
-            update.message.reply_text(make_ans(arr))
-
-
-def scalar_multiplication(bot, update, args):
-    if len(args) == 0:
-        answerer()
-        update.message.reply_text('Введите размер вектора,'
-                                  ' а потом сами векторы')
-    else:
-        n = int(args[0])
-        if len(args) != 2 * n + 1:
-            update.message.reply_text('Кажется, ващи вектора'
-                                      'не того размера.'
-                                      'Нужный размер - {}'.format(n))
-        else:
-            try:
-                new_array1 = [int(args[column + 1]) for column in range(n)]
-                new_array2 = [int(args[column + n + 1]) for column in range(n)]
-                val_dict = db_prepare(update.message,
-                                      '/multiscalar',
-                                      new_array1,
-                                      new_array2,
-                                      "NULL"
-                                      )
-                ans = my_db.select_from_db(val_dict)
-                if len(ans):
-                    arr = json.loads(ans[0][0])
-                    my_db.update_date(update.message['chat']['id'],
-                                      ans[0][1],
-                                      update.message['date'].__str__()
-                                      )
+                k = int(args[1])
+                new_array1 = [[int(args[2 + row * k + column]) for column in range(k)] for row in range(n)]
+                if self.command_name == "/transpose":
+                    new_array2 = None
                 else:
-                    arr = [0]
-                    for column in range(n):
-                        arr[0] += new_array1[column] * new_array2[column]
-                    val_dict['answer'] = json.dumps(arr)
-                    print(val_dict)
-                    my_db.insert_into_db(val_dict)
-            except Exception as err:
-                print(err.__str__())
-            update.message.reply_text(make_ans([arr]))
+                    i = n * k + 2
+                    if self.command_name == "/multimatrix":
+                        k1, m1 = int(args[i]), int(args[i + 1])
+                        i += 2
+                        if k1 != k:
+                            update.message.reply_text(self.args_format_fail_answer)
+                            return None, None
+                    else:
+                        k1 = n
+                        m1 = k
+                    new_array2 = [[int(args[i + row * m1 + column]) for column in range(m1)] for row in range(k1)]
+        except IndexError:
+            update.message.reply_text(self.args_count_fail_answer)
+            return None, None
+        return new_array1, new_array2
 
+    def make_operation(self, bot, update, mat1, mat2):
+        if mat1 is None:
+            return None
 
-def show_history(bot, update, args):
-    if len(args) == 0:
-        answerer(bot, update)
-    else:
-        n = int(args[0])
-        hist = my_db.select_history(min(n, 10), {'chat_id': update.message['chat']['id']})
-        if not len(hist):
-            update.message.reply_text('У Вас еще нет истории. Создайте её прямо сейчас!')
+        if mat2 is None:
+            val_dict = db_prepare(
+                update.message,
+                self.command_name,
+                mat1,
+                "NULL",
+                "NULL"
+            )
         else:
+            val_dict = db_prepare(
+                update.message,
+                self.command_name,
+                mat1,
+                mat2,
+                "NULL"
+            )
+
+        if self.command_name == '/showhistory':
+            n = mat1[0]
+            hist = my_db.select_history(min(n, 10), {'chat_id': update.message['chat']['id']})
+            if not len(hist):
+                update.message.reply_text(self.args_format_answer)
+                return
             if len(hist) == 10 and n > 10:
                 update.message.reply_text('Простите, в вашей истории храняться'
                                           'только последние 10 записей.')
+            arr = []
             for elem in hist:
-                update.message.reply_text('Первая матрица:\n{}\n\nВторая матрица:\n{}'
-                                          '\n\nОтвет:\n{}'.format(make_ans(json.loads(elem[2])),
-                                                                  make_ans(json.loads(elem[3])),
-                                                                  make_ans(json.loads(elem[4])))
-                                          )
+                request_type = elem[2][1:]
+                matrix1 = format_answer(json.loads(elem[2]))
+                matrix2 = format_answer(json.loads(elem[3]))
+                answer = format_answer(json.loads(elem[4]))
+                if matrix2 is None:
+                    arr.append('{}\n\nМатрица:\n{}\n\nОтвет:\n{}'.format(
+                        request_type,
+                        matrix1,
+                        answer
+                    ))
+                else:
+                    arr.append('{}\n\nПервая матрица:\n{}\n\nВторая матрица:\n{}\n\nОтвет:\n{}'.format(
+                        request_type,
+                        matrix1,
+                        matrix2,
+                        answer
+                    ))
+
+        ans = my_db.select_from_db(val_dict)
+        if len(ans):
+            arr = json.loads(ans[0][0])
+            my_db.update_date(
+                update.message['chat']['id'],
+                ans[0][1],
+                update.message['date'].__str__()
+            )
+        else:
+            if self.command_name == '/multiscalar':
+                arr = [0]
+                for column in range(len(mat1)):
+                    arr[0] += mat1[column] * mat2[column]
+            elif self.command_name == '/transpose':
+                arr = np.array(mat1).transpose().tolist()
+            else:
+                if self.command_name == '/matrixsum':
+                    new_arr = np.array(mat1) + np.array(mat2)
+                elif self.command_name == '/multimatrix':
+                    new_arr = np.dot(np.array(mat1), np.array(mat2))
+                arr = [[int(new_arr[row][column]) for column in range(len(new_arr[0]))]
+                       for row in range(len(new_arr))]
+
+            val_dict['answer'] = json.dumps(arr)
+            my_db.insert_into_db(val_dict)
+
+        print(arr)
+        return arr
+
+    def answering(self, bot, update, answer):
+        if answer is None:
+            return
+        if self.command_name == '/showhistory':
+            for elem in answer:
+                update.message.reply_text(elem)
+        else:
+            update.message.reply_text(format_answer(answer))
+
+    def __call__(self, bot, update, args):
+        matrix1, matrix2 = self.read_args(bot, update, args)
+        result = self.make_operation(bot, update, matrix1, matrix2)
+        self.answering(bot, update, result)
+
+
+def show_history(bot, update, args):
+    operator = OpHandler()
+    operator.command_name = '/showhistory'
+    operator.args_format_fail_answer = 'У Вас еще нет истории. Создайте её прямо сейчас!'
+    operator.__call__(bot, update, args)
+
+
+def scalar_multiplication(bot, update, args):
+    operator = OpHandler()
+    operator.command_name = '/multiscalar'
+    operator.args_fail_answer = 'Введите размер вектора, а потом сами векторы'
+    operator.args_count_fail_answer = 'Кажется, ващи вектора не того размера. Нужный размер - {}'
+    operator.__call__(bot, update, args)
+
+
+def matrix_sum(bot, update, args):
+    operator = OpHandler()
+    operator.command_name = '/matrixsum'
+    operator.args_fail_answer = 'Введите размеры матрицы и саму матрицу, а потом вторую'
+    operator.args_count_fail_answer = 'Ваши матрицы не соответствуют указанным размерам.'
+    operator.__call__(bot, update, args)
+
+
+def matrix_multiplication(bot, update, args):
+    operator = OpHandler()
+    operator.command_name = '/multimatrix'
+    operator.args_fail_answer = 'Введите размеры матрицы и саму матрицу, а потом в таком же формате вторую'
+    operator.args_count_fail_answer = 'Ваши матрицы не соответствуют указанным размерам.'
+    operator.args_format_fail_answer = 'Нельзя перемножить ваши матрицы.'
+    operator.__call__(bot, update, args)
+
+
+def transpose(bot, update, args):
+    operator = OpHandler()
+    operator.command_name = '/transpose'
+    operator.args_fail_answer = 'Введите размеры двумерной матрицы, а потом саму матрицу'
+    operator.args_count_fail_answer = 'Ваша матрица не соответствуют указанным размерам.'
+    operator.__call__(bot, update, args)
 
 
 def main():
-    updater = Updater(open('token').read())
+    updater = Updater(open('token.txt').read())
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", bot_help))
     dp.add_handler(CommandHandler("transpose", transpose, pass_args=True))
     dp.add_handler(CommandHandler("multimatrix", matrix_multiplication, pass_args=True))
     dp.add_handler(CommandHandler("matrixsum", matrix_sum, pass_args=True))
     dp.add_handler(CommandHandler("multiscalar", scalar_multiplication, pass_args=True))
     dp.add_handler(CommandHandler("showhistory", show_history, pass_args=True))
+    dp.add_handler(CommandHandler("transpose_example", transpose_example))
+    dp.add_handler(CommandHandler("multimatrix_example", multimatrix_example))
+    dp.add_handler(CommandHandler("matrixsum_example", matrixsum_example))
+    dp.add_handler(CommandHandler("multiscalar_example", multiscalar_example))
 
     # # on noncommand i.e message - answer the noncommand-message on Telegram
     dp.add_handler(MessageHandler(Filters.text, answerer))
@@ -245,5 +330,5 @@ def main():
 
 
 if __name__ == '__main__':
-    my_db.main()
+    my_db.create_db()
     main()
