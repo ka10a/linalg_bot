@@ -100,7 +100,7 @@ def bot_help(bot, update):
 def db_prepare(message, _type, fm, sm, ans):
     d = dict()
     d['chat_id'] = message['chat']['id']
-    d['request_date'] = message['date'].__str__()
+    d['request_date'] = str(message['date'])
     d['request_type'] = _type
     d['first_matrix'] = json.dumps(fm)
     d['second_matrix'] = json.dumps(sm) if sm != "NULL" else sm
@@ -109,7 +109,6 @@ def db_prepare(message, _type, fm, sm, ans):
 
 
 def format_answer(arr):
-    # print(arr)
     answer = ''
     for elem in arr:
         for e in elem[:-1]:
@@ -234,7 +233,7 @@ class OpHandler:
             my_db.update_date(
                 update.message['chat']['id'],
                 ans[0][1],
-                update.message['date'].__str__()
+                str(update.message['date'])
             )
         else:
             if self.command_name == '/multiscalar':
