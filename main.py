@@ -90,7 +90,7 @@ def bot_help(bot, update):
         "/multiscalar - скалярное произведение векторов\n" +\
         "Примерчик: /multiscalar_example\n\n" +\
         "/showhistory - команда для просмотра истории.\n" +\
-        "Храняться только последние 10 твоих запросов на высчисление ¯\(°_o)/¯\n" +\
+        "Хранятся только последние 10 твоих запросов на высчисление ¯\(°_o)/¯\n" +\
         "Как надо набирать эту команду:\n" +\
         "/showhistory 5 - показать последние 5 запросов на вычисление\n\n" +\
         "Все матрицы записываются подряд построчно.\nНапример, матрица\n1 2\n3 4\nбудет выглядеть как 1 2 3 4"
@@ -208,16 +208,19 @@ class OpHandler:
             for elem in hist:
                 request_type = elem[1]
                 matrix1 = format_answer(json.loads(elem[2]))
-                matrix2 = format_answer(json.loads(elem[3]))
+                if elem[3] is None:
+                    matrix2 = None
+                else:
+                    matrix2 = format_answer(json.loads(elem[3]))
                 answer = format_answer(json.loads(elem[4]))
                 if matrix2 is None:
-                    arr.append('{}\n\nМатрица:\n{}\n\nОтвет:\n{}'.format(
+                    arr.append('{}\n\nМатрица:\n{}\nОтвет:\n{}'.format(
                         request_type,
                         matrix1,
                         answer
                     ))
                 else:
-                    arr.append('{}\n\nПервая матрица:\n{}\n\nВторая матрица:\n{}\n\nОтвет:\n{}'.format(
+                    arr.append('{}\n\nПервая матрица:\n{}\nВторая матрица:\n{}\nОтвет:\n{}'.format(
                         request_type,
                         matrix1,
                         matrix2,
