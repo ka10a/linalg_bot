@@ -57,7 +57,7 @@ def multiscalar_example(bot, update):
     example = Example()
     example.command_name = "/multiscalar"
     example.command_input = "{} {} {}".format(
-        example.n,
+        example.k,
         example.matrix1,
         example.matrix2
     )
@@ -74,7 +74,7 @@ def matrixsum_example(bot, update):
         example.matrix1,
         example.matrix2
     )
-    example.ans = "3 8"
+    example.ans = "4 6"
     example.write(bot, update)
 
 
@@ -109,7 +109,7 @@ def db_prepare(message, _type, fm, sm, ans):
 
 
 def format_answer(arr):
-    print(arr)
+    # print(arr)
     answer = ''
     for elem in arr:
         for e in elem[:-1]:
@@ -139,17 +139,19 @@ class OpHandler:
 
         n = int(args[0])
         if self.command_name == '/showhistory':
-            return n, None
+            return [n], None
 
         try:
             if self.command_name == '/multiscalar':
-                new_array1 = [int(args[column]) for column in range(1, n + 1)]
-                new_array2 = [int(args[column]) for column in range(n + 1, 2 * n + 1)]
+                new_array1 = [[int(args[column]) for column in range(1, n + 1)]]
+                new_array2 = [[int(args[column]) for column in range(n + 1, 2 * n + 1)]]
+                i = 2 * n + 1
             else:
                 k = int(args[1])
                 new_array1 = [[int(args[2 + row * k + column]) for column in range(k)] for row in range(n)]
                 if self.command_name == "/transpose":
                     new_array2 = None
+                    i = 2 + n * k
                 else:
                     i = n * k + 2
                     if self.command_name == "/multimatrix":
@@ -162,6 +164,10 @@ class OpHandler:
                         k1 = n
                         m1 = k
                     new_array2 = [[int(args[i + row * m1 + column]) for column in range(m1)] for row in range(k1)]
+                    i += m1 * k1
+            if i != len(args):
+                update.message.reply_text("Слишком много аргументов. Давай по новой.")
+                return None, None
         except IndexError:
             update.message.reply_text(self.args_count_fail_answer)
             return None, None
@@ -189,17 +195,18 @@ class OpHandler:
             )
 
         if self.command_name == '/showhistory':
-            n = mat1[0]
+            n = int(mat1[0])
             hist = my_db.select_history(min(n, 10), {'chat_id': update.message['chat']['id']})
             if not len(hist):
                 update.message.reply_text(self.args_format_answer)
-                return
+                return None
             if len(hist) == 10 and n > 10:
                 update.message.reply_text('Простите, в вашей истории храняться'
                                           'только последние 10 записей.')
+
             arr = []
             for elem in hist:
-                request_type = elem[2][1:]
+                request_type = elem[1]
                 matrix1 = format_answer(json.loads(elem[2]))
                 matrix2 = format_answer(json.loads(elem[3]))
                 answer = format_answer(json.loads(elem[4]))
@@ -216,6 +223,7 @@ class OpHandler:
                         matrix2,
                         answer
                     ))
+            return arr
 
         ans = my_db.select_from_db(val_dict)
         if len(ans):
@@ -227,9 +235,9 @@ class OpHandler:
             )
         else:
             if self.command_name == '/multiscalar':
-                arr = [0]
-                for column in range(len(mat1)):
-                    arr[0] += mat1[column] * mat2[column]
+                arr = [[0]]
+                for column in range(len(mat1[0])):
+                    arr[0][0] += mat1[0][column] * mat2[0][column]
             elif self.command_name == '/transpose':
                 arr = np.array(mat1).transpose().tolist()
             else:
@@ -243,7 +251,6 @@ class OpHandler:
             val_dict['answer'] = json.dumps(arr)
             my_db.insert_into_db(val_dict)
 
-        print(arr)
         return arr
 
     def answering(self, bot, update, answer):

@@ -103,25 +103,26 @@ def select_from_db(find_dict):
     cur = conn.cursor()
     if find_dict['second_matrix'] == "NULL":
         query = '''
-                        SELECT answer, request_date FROM History
-                        WHERE
-                        chat_id = {} AND
-                        request_type = "{}" AND
-                        first_matrix = "{}" AND
-                        second_matrix IS NULL
-                    '''.format(
+                SELECT answer, request_date FROM History
+                WHERE
+                chat_id = {} AND
+                request_type = "{}" AND
+                first_matrix = "{}" AND
+                second_matrix IS NULL
+                '''.format(
             find_dict['chat_id'],
             find_dict['request_type'],
             find_dict['first_matrix']
         )
     else:
-        query = '''SELECT answer, request_date FROM History
-                    WHERE
-                    chat_id = {} AND
-                    request_type = "{}" AND
-                    first_matrix = "{}" AND
-                    second_matrix = "{}"
-                    '''.format(
+        query = '''
+                SELECT answer, request_date FROM History
+                WHERE
+                chat_id = {} AND
+                request_type = "{}" AND
+                first_matrix = "{}" AND
+                second_matrix = "{}"
+                '''.format(
             find_dict['chat_id'],
             find_dict['request_type'],
             find_dict['first_matrix'],
